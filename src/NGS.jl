@@ -20,6 +20,6 @@ export NGSDMRG, GSDMRG
 export solve, init_env
 
 # Observables
-export mean_photon_number, collective_magnetizations, structure_factor_z, spin_boson_correlators
+export expect_n, expect_sx, expect_sz, correlation_matrix_sxsx, correlation_matrix_szsz
 
 end

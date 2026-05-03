@@ -64,15 +64,16 @@ This package is currently provided as a local research package. To use it:
 Below is a minimal example demonstrating the simulation of the Dicke-Ising Model.
 
 ```julia
-using NGSDMRG
+using NGS
 
 # 1. Define the Physics Model
+N = 20
 
 # Coupling Example (Nearest-neighbor Z-interaction)
 coups = [Couplings(i, i+1, 2.0, :z) for i in 1:N-1]
 
 model = ExtendedDickeModel(
-    N=20, 
+    N=N, 
     omega=1.0, 
     g=0.8,
     epsilon=1.0,
@@ -82,13 +83,15 @@ model = ExtendedDickeModel(
 # 2. Run the Solver
 result = solve(model; max_iter=250, tol=1e-8)
 
-# 3. Calculate Modular Observables
-avg_n = mean_photon_number(model, result)
-mags = collective_magnetizations(model, result)
+# 3. Calculate Observables
+avg_n = expect_n(model, result)
+
+sz_sites = expect_sz(model, result)
+mz = sum(sz_sites) / N
 
 println("Ground State Energy: ", result.energy)
 println("Mean Photon Number:  ", avg_n)
-println("Magnetization Mz:    ", mags.Mz)
+println("Magnetization Mz:    ", mz)
 
 # Accessing Convergence Telemetry
 println("Converged in $(result.stats.iterations) iterations.")
@@ -99,10 +102,10 @@ More examples can be found in `notebooks/`.
 ## Repository Structure
 
   * `src/`: Source code for the library.
-      * `NGSDMRG.jl`: Main module definition and exports.
-      * `types.jl`: Core types, model definitions, and the `NGSResult` struct.
+      * `NGS.jl`: Main module definition and exports.
+      * `types.jl`: Core types, model definitions, and the `SolverResult` struct.
       * `physics.jl`: Implementation of the effective Hamiltonian, MPO caching, and energy functionals.
       * `solver.jl`: The self-consistent optimization loops and DMRG interface.
-      * `observables.jl`: Independent functions for physical measurements (photon number, magnetizations, structure factors).
+      * `observables.jl`: Independent functions for expected values and correlations.
   * `notebooks/`: Notebook examples for reproducing benchmarks and plotting phase diagrams.
 
