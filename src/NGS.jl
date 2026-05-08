@@ -1,6 +1,6 @@
 module NGS
 
-using ITensors, ITensorMPS, Optim, LinearAlgebra, Printf, SparseArrays
+using ITensors, ITensorMPS, Optim, LinearAlgebra, Printf
 
 # Load scripts
 include("types.jl")
@@ -10,16 +10,16 @@ include("observables.jl")
 
 # --- Public API ---
 
-# Types
-export ExtendedDickeModel, Couplings, SolverResult, SolverStats
+# Core Types
+export SpinBosonSystem, GS, HomogeneousNGS, NGSState, SolverStats
 
-# Dispatch Tags
-export NGSDMRG, GSDMRG
+# Builder Mutators
+export add_boson!, set_epsilon!, add_spin_coupling!, add_spin_boson_coupling!
 
-# Core Methods
-export solve, init_env
+# Solver Methods
+export solve_ngs
 
 # Observables
-export expect_n, expect_sx, expect_sz, correlation_matrix_sxsx, correlation_matrix_szsz
+export expect_ngs, correlation_matrix_ngs
 
 end

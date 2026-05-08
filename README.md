@@ -38,7 +38,7 @@ A self-consistent optimization loop then minimizes the variational energy with r
 
   * **Truncation-free Bosons:** Effectively handles regimes with macroscopic photon occupancy (e.g., superradiance) without convergence issues related to basis size.
   * **Reduced Computational Cost:** The necessary bond-dimension to obtain the ground state is significantly reduced, as the MPS solver only has to deal with an effective spin-only model.
-  * **Modular Architecture:** The package is designed to be extensible, utilizing multiple dispatch for models and algorithms. 
+  * **Modular Architecture:** The package is designed to be extensible, strictly separating the physical topology graph from the mathematical variational manifolds (`GS`, `HomogeneousNGS`) and the tensor-network solver backends. 
 
 ## Installation
 
@@ -65,47 +65,57 @@ Below is a minimal example demonstrating the simulation of the Dicke-Ising Model
 
 ```julia
 using NGS
+using Printf
 
-# 1. Define the Physics Model
+# 1. Define the Physics Topology
 N = 20
+sys = SpinBosonSystem(N)
 
-# Coupling Example (Nearest-neighbor Z-interaction)
-coups = [Couplings(i, i+1, 2.0, :z) for i in 1:N-1]
+# Add a single bosonic cavity mode (returns mode index m)
+m = add_boson!(sys, 1.0) # omega = 1.0
 
-model = ExtendedDickeModel(
-    N=N, 
-    omega=1.0, 
-    g=0.8,
-    epsilon=1.0,
-    couplings=coups
-)
+# Populate local fields and coupling graphs
+for i in 1:N
+    set_epsilon!(sys, i, 1.0)
+    
+    # Collective coupling (all spins couple to mode m along X)
+    add_spin_boson_coupling!(sys, m, :x, i, 0.8) # g = 0.8
+    
+    # Nearest-neighbor Ising Z-interaction
+    if i < N
+        add_spin_coupling!(sys, :z, i, i+1, 2.0) # J = 2.0
+    end
+end
 
-# 2. Run the Solver
-result = solve(model; max_iter=250, tol=1e-8)
+# 2. Run the Solver (Cold Start)
+# The ITensors kwargs (nsweeps, maxdim, cutoff) are piped directly to DMRG.
+E0, state_ngs, stats = solve_ngs(sys; 
+                                 backend=:dmrg, 
+                                 return_stats=true,
+                                 nsweeps=100, 
+                                 maxdim=[10, 20, 50, 100], 
+                                 cutoff=1e-10)
 
-# 3. Calculate Observables
-avg_n = expect_n(model, result)
+# 3. Calculate Observables using the unified analytical dressing API
+avg_n = expect_ngs("n", state_ngs, sys)
+sz_sites = expect_ngs("Sz", state_ngs, sys)
 
-sz_sites = expect_sz(model, result)
 mz = sum(sz_sites) / N
 
-println("Ground State Energy: ", result.energy)
-println("Mean Photon Number:  ", avg_n)
-println("Magnetization Mz:    ", mz)
-
-# Accessing Convergence Telemetry
-println("Converged in $(result.stats.iterations) iterations.")
+@printf("Ground State Energy: %.8f\n", E0)
+@printf("Mean Photon Number:  %.4f\n", avg_n)
+@printf("Magnetization Mz:    %.4f\n", mz)
+println("Converged in $(stats.iterations) iterations.")
 ```
 
-More examples can be found in `notebooks/`.
+More examples, including warm-starting workflows for parameter sweeps, can be found in `notebooks/`.
 
 ## Repository Structure
 
   * `src/`: Source code for the library.
       * `NGS.jl`: Main module definition and exports.
-      * `types.jl`: Core types, model definitions, and the `SolverResult` struct.
-      * `physics.jl`: Implementation of the effective Hamiltonian, MPO caching, and energy functionals.
-      * `solver.jl`: The self-consistent optimization loops and DMRG interface.
-      * `observables.jl`: Independent functions for expected values and correlations.
+      * `types.jl`: Core abstract hierarchy, the `SpinBosonSystem` explicit graph builder, variational manifolds (`GS`, `HomogeneousNGS`), and the unified `NGSState`.
+      * `physics.jl`: Implementation of the analytical operator sums, dynamic effective Hamiltonian compilation, and energy functionals.
+      * `solver.jl`: The self-consistent optimization loops, cold/warm start dispatch logic, and the DMRG backend engine.
+      * `observables.jl`: Unified multiple-dispatch functions (`expect_ngs`, `correlation_matrix_ngs`) for exact observables with automatic mathematical dressing.
   * `notebooks/`: Notebook examples for reproducing benchmarks and plotting phase diagrams.
-

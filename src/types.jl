@@ -1,81 +1,103 @@
 # src/types.jl
 
-"""
-Abstract supertype for all spin-boson physical models.
-"""
+# --- Core Hierarchy ---
 abstract type AbstractSpinBosonModel end
+abstract type AbstractAnsatz end
+abstract type AbstractSolverBackend end
 
-"""
-Helper structure for user-friendly model building. 
-`axis` refers to the interaction axis (:x, :y, or :z).
-"""
-struct Couplings
+# --- Numerical Backends ---
+struct DMRGBackend <: AbstractSolverBackend end
+
+# --- Explicit Interaction Graphs ---
+struct SpinCoupling
+    axis::Symbol
     i::Int
     j::Int
-    value::Float64
+    val::Float64
+end
+
+struct SpinBosonCoupling
+    m::Int
     axis::Symbol 
+    site::Int
+    val::Float64
 end
 
-"""
-Defines a single-mode extended Dicke model.
+# --- The Physical Builder ---
+mutable struct SpinBosonSystem <: AbstractSpinBosonModel
+    N::Int                                 
+    omega::Vector{Float64}                 
+    epsilon::Vector{Float64}          
+    spin_couplings::Vector{SpinCoupling} 
+    spin_boson_couplings::Vector{SpinBosonCoupling}    
 
-Contains the physical parameters: number of spins/sites `N`, cavity frequency `omega`,
-collective coupling `g`, local fields `epsilon`, and sparse interaction matrices
-`Jx`, `Jy`, `Jz` for anisotropic spin-spin couplings built from Couplings.
-"""
-struct ExtendedDickeModel <: AbstractSpinBosonModel
-    N::Int
-    omega::Float64
-    g::Float64
-    epsilon::Vector{Float64}
-    Jx::SparseMatrixCSC{Float64, Int}
-    Jy::SparseMatrixCSC{Float64, Int}
-    Jz::SparseMatrixCSC{Float64, Int}
-
-    function ExtendedDickeModel(N, omega, g, epsilon, Jx, Jy, Jz)
-        new(N, Float64(omega), Float64(g), Float64.(epsilon), Jx, Jy, Jz)
+    function SpinBosonSystem(N::Int)
+        new(N, Float64[], zeros(Float64, N), SpinCoupling[], SpinBosonCoupling[])
     end
 end
 
+# --- API Mutators ---
+
 """
-Keyword constructor for `ExtendedDickeModel`. Expands a scalar `epsilon` to a uniform
-vector of length `N` and constructs sparse coupling matrices from a list of `Couplings`.
+Adds a bosonic mode with frequency `w`. Returns the mode index.
 """
-function ExtendedDickeModel(; N, omega, g, epsilon, couplings::AbstractVector{Couplings}=Couplings[])
+function add_boson!(sys::SpinBosonSystem, w::Float64)
+    push!(sys.omega, w)
+    return length(sys.omega)
+end
 
-    eps_vec = if epsilon isa AbstractVector
-        length(epsilon) == N || error("epsilon must have length N=$N")
-        Float64.(epsilon)
-    else
-        fill(Float64(epsilon), N)
-    end
+"""
+Sets the local splitting for a specific spin `i`.
+"""
+function set_epsilon!(sys::SpinBosonSystem, i::Int, val::Float64)
+    sys.epsilon[i] = val
+end
 
-    Jx = spzeros(Float64, N, N)
-    Jy = spzeros(Float64, N, N)
-    Jz = spzeros(Float64, N, N)
-    for c in couplings
-        i, j = c.i, c.j
+"""
+Adds a two-body spin interaction at sites `i` and `j`.
+"""
+function add_spin_coupling!(sys::SpinBosonSystem, axis::Symbol, i::Int, j::Int, val::Float64)
+    push!(sys.spin_couplings, SpinCoupling(axis, i, j, val))
+end
 
-        (1 <= i <= N) || error("Coupling index i=$i out of bounds for N=$N")
-        (1 <= j <= N) || error("Coupling index j=$j out of bounds for N=$N")
-        i != j || error("Diagonal coupling not allowed: ($i,$j)")
+"""
+Adds a spin-boson interaction at site `i` and mode `m`.
+"""
+function add_spin_boson_coupling!(sys::SpinBosonSystem, m::Int, axis::Symbol, i::Int, val::Float64)
+    push!(sys.spin_boson_couplings, SpinBosonCoupling(m, axis, i, val))
+end
 
-        a = min(i, j)
-        b = max(i, j)
+# --- Variational Manifolds ---
 
-        # upper-triangle convention to match internal Hamiltonian construction
-        if c.axis == :x
-            Jx[a, b] += c.value
-        elseif c.axis == :y
-            Jy[a, b] += c.value
-        elseif c.axis == :z
-            Jz[a, b] += c.value
-        else
-            error("Unknown coupling axis $(c.axis). Use :x, :y, or :z.")
-        end
-    end
+"""
+Homogeneous Non-Gaussian Ansatz.
+Contains the variational parameters.
+"""
+struct HomogeneousNGS <: AbstractAnsatz
+    xi::Float64
+    lambda::Float64
+end
 
-    return ExtendedDickeModel(N, omega, g, eps_vec, Jx, Jy, Jz)
+"""
+Gaussian State (GS) Ansatz.
+Structurally identical to HomogeneousNGS, 
+but strictly locks parameters to zero.
+"""
+struct GS <: AbstractAnsatz
+    xi::Float64
+    lambda::Float64
+    GS() = new(0.0, 0.0)
+end
+
+# --- Output State ---
+
+"""
+Output container for the ground state.
+Carries the exact MPS and the optimized variational parameters.
+"""
+struct NGSState{A<:AbstractAnsatz}
+    psi_spin::MPS
+    var_params::A
 end
 
 """
@@ -85,14 +107,4 @@ struct SolverStats
     converged::Bool
     iterations::Int
     energy_history::Vector{Float64}
-end
-
-"""
-Container for the output of the variational solver.
-"""
-struct SolverResult{P}
-    energy::Float64
-    psi::MPS
-    variational_params::P
-    stats::SolverStats
 end
