@@ -71,16 +71,18 @@ function solve_ngs(model::SpinBosonSystem, state_init::NGSState{GS}; backend=:dm
     # Create a temporary zeroed context for the internal math engine
     mock_state = NGSState(state_init.psi_spin, HomogeneousNGS(0.0, 0.0))
 
-    # Run the engine, strictly overriding optimize_params to false
-    result = _solve(model, mock_state, DMRGBackend(); 
-                    optimize_params=false, sites=sites, base_ops=base_ops, kwargs...)
+    return_stats = get(kwargs, :return_stats, false)
 
-    # Unpack the result to repack it with the strict GS type
-    if length(result) == 3
-        return result[1], NGSState(result[2].psi_spin, GS()), result[3]
+    if return_stats
+        E0, mock_ngs, stats = _solve(model, mock_state, DMRGBackend(); 
+                                     optimize_params=false, sites=sites, base_ops=base_ops, kwargs...)
+        return E0, NGSState(mock_ngs.psi_spin, GS()), stats
     else
-        return result[1], NGSState(result[2].psi_spin, GS())
+        E0, mock_ngs = _solve(model, mock_state, DMRGBackend(); 
+                              optimize_params=false, sites=sites, base_ops=base_ops, kwargs...)
+        return E0, NGSState(mock_ngs.psi_spin, GS())
     end
+
 end
 
 
@@ -99,6 +101,7 @@ function _solve(model::SpinBosonSystem, state_init::NGSState{HomogeneousNGS}, ::
                 tol=1e-8,
                 return_stats=false,
                 outputlevel=1,
+                mpo_cutoff=1e-12,
                 dmrg_kwargs...) 
 
     # 1. State Validation
@@ -147,7 +150,7 @@ function _solve(model::SpinBosonSystem, state_init::NGSState{HomogeneousNGS}, ::
         end
 
         # Assemble MPO using dynamically instantiated parameters
-        H_eff = effective_hamiltonian(base_ops, model, HomogeneousNGS(vparams_opt[1], vparams_opt[2]), spin_obs.avg_sx_tot, sites)        
+        H_eff = effective_hamiltonian(base_ops, model, HomogeneousNGS(vparams_opt[1], vparams_opt[2]), spin_obs.avg_sx_tot, sites; cutoff=mpo_cutoff)        
         
         # Run ITensors DMRG
         E0, psi = dmrg(H_eff, psi; outputlevel=outputlevel, dmrg_kwargs...)

@@ -118,7 +118,7 @@ Assembles the effective spin Hamiltonian by scaling the pre-built OpSums
 with the updated dressing parameters. The tensor network MPO is compiled 
 strictly once per optimization step here.
 """
-function effective_hamiltonian(base_ops, model::SpinBosonSystem, ansatz::HomogeneousNGS, avg_sx, sites)
+function effective_hamiltonian(base_ops, model::SpinBosonSystem, ansatz::HomogeneousNGS, avg_sx, sites; cutoff=1e-12)
     omega = model.omega[1]
     g = model.spin_boson_couplings[1].val 
     
@@ -143,5 +143,5 @@ function effective_hamiltonian(base_ops, model::SpinBosonSystem, ansatz::Homogen
                c_plus * base_ops.HJz_z -
                c_minus * base_ops.HJz_y
             
-    return MPO(total_os, sites)
+    return MPO(total_os, sites; cutoff=cutoff)
 end
