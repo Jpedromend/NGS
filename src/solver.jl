@@ -127,12 +127,12 @@ function _solve(model::SpinBosonSystem, state_init::NGSState{HomogeneousNGS}, ::
     
     # 3. Self-Consistent Loop
     for iter in 1:max_iter
-        if iter >= min_iter && abs(E0 - prev_E0) < tol
+        if iter > min_iter && abs(E0 - prev_E0) < tol
             if outputlevel >= 1
-                @printf("Converged at step %3d\n", iter)
+                @printf("Converged at step %3d\n", iter - 1)
             end
             converged = true
-            final_iter = iter
+            final_iter = iter - 1
             break
         end
         
