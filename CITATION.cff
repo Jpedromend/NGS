@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Mendonça"
+  given-names: "João Pedro"
+  orcid: "https://orcid.org/0000-0002-7765-9677"
+title: "NGS"
+version: 0.3.3
+doi: 10.5281/zenodo.21433241
+date-released: 2026-07-18
+url: "https://github.com/Jpedromend/NGS"
+license: "Apache-2.0"
