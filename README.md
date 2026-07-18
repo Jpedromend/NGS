@@ -1,5 +1,14 @@
 <img src="logo.png" alt="NGS.jl" width="400">
 
+> [!WARNING]
+> This package is in early, active development. It is being made public now for
+> early community access alongside our arXiv submission (arXiv:XXXX.XXXXX). While 
+> intended for broader research use, this is pre-release software. A comprehensive 
+> documentation is still pending. Expect breaking changes as the core features are 
+> developed.
+>
+> Please use with caution until the official release.
+
 # NGS: Variational non-Gaussian solutions to interacting spin-boson models
 
 **NGS** is a Julia package designed to study ground-state properties of strongly correlated spin-boson systems. It relies on a hybrid numerical framework that optimizes a non-Gaussian state (NGS) ansatz.
@@ -115,7 +124,7 @@ More examples, including warm-starting workflows for parameter sweeps, can be fo
   * `src/`: Source code for the library.
       * `NGS.jl`: Main module definition and exports.
       * `types.jl`: Core abstract hierarchy, the `SpinBosonSystem` explicit graph builder, variational manifolds (`GS`, `HomogeneousNGS`), and the unified `NGSState`.
-      * `physics.jl`: Implementation of the analytical operator sums, dynamic effective Hamiltonian compilation, and energy functionals.
+      * `physics.jl`: Implementation of the analytical operator sums, effective Hamiltonian compilation, and energy functionals.
       * `solver.jl`: The self-consistent optimization loops, cold/warm start dispatch logic, and the DMRG backend engine.
       * `observables.jl`: Unified multiple-dispatch functions (`expect_ngs`, `correlation_matrix_ngs`) for exact observables with automatic mathematical dressing.
   * `notebooks/`: Notebook examples for reproducing benchmarks and plotting phase diagrams.
