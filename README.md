@@ -21,7 +21,7 @@ This package implements the method described in the following papers:
 > JP Mendonça, K Jachymski, Y Wang,
 > Physical Review Letters 135 (13), 133601 (2025)
 
-If you use this code in your research, please cite the associated manuscripts (cf. License).
+If you use this code in your research, please cite the associated manuscripts.
 
 ## Overview
 
