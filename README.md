@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > This package is in early, active development. It is being made public now for
-> early community access alongside our arXiv submission (arXiv:XXXX.XXXXX). While 
+> early community access alongside our arXiv submission (arXiv:2607.17934). While 
 > intended for broader research use, this is pre-release software. A comprehensive 
 > documentation is still pending. Expect breaking changes as the core features are 
 > developed.
@@ -16,7 +16,7 @@
 This package implements the method described in the following papers:
 >  1. **Variational non-gaussian solutions to interacting spin-boson models**,
 > JP Mendonça, Y Wang, and K Jachymski,
-> [arXiv link / DOI placeholder] 
+> https://doi.org/10.48550/arXiv.2607.17934 
 > 2. **Role of Matter Interactions in Superradiant Phenomena**,
 > JP Mendonça, K Jachymski, Y Wang,
 > Physical Review Letters 135 (13), 133601 (2025)
